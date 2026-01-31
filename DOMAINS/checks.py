@@ -42,4 +42,4 @@ class CheckChangeStatusTask:
 
     def can_change_to_cancel(self) -> bool:
         """Проверка разрешения изменения статуса задачи на CANCELLED"""
-        return ICheck.can_change_status(self.task_status, e.TaskCannotCancel, St.DONE)
+        return ICheck.can_change_status(self.task_status, e.TaskCannotCancel, St.DONE, St.CANCELLED)

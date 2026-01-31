@@ -1,5 +1,7 @@
+import tempfile
 import unittest
 import exceptions as e
+from pathlib import Path
 
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -7,7 +9,7 @@ from zoneinfo import ZoneInfo
 from DOMAINS.TASK_MANAGER import Task
 from DOMAINS.time_clock import FakeClock
 from DOMAINS.types_task import TimedBehavior
-from DOMAINS.repository_task import InMemoryTaskRepository
+from DOMAINS.repository_task import InMemoryTaskRepository, JsonTaskRepository
 from DOMAINS.factories import TaskFactory, RunCommand, EditTask, OtherCommands
 from DOMAINS.parsing import ParsingDate
 
@@ -37,6 +39,12 @@ class TestInMemoryTaskRepository(unittest.TestCase):
         """Тест для проверки наличия задачи по id после добавления задачи"""
         self.assertIsInstance(self.command.find(1), Task)
 
+    def test_can_no_input_description(self):
+        """Тест для проверки возможности не вводить описание задачи"""
+        self.task2 = TaskFactory.create_task(2, "Task 2", None, "20 3 2026 12")
+        self.command2 = RunCommand(self.task2, InMemoryTaskRepository())
+        self.command2.add()
+        self.assertIsNone(self.command2.find(2).description)
 
 class TestParsingDate(unittest.TestCase):
     """Класс для проверки парсинга даты"""
@@ -94,6 +102,13 @@ class TestStatusTaskFromRepository(unittest.TestCase):
         self.command.cancel()
         res1 = self.command.find(1)
         self.assertEqual(res1.status, St.CANCELLED)
+
+    def test_cannot_CANCELLED_task_if_it_cancel(self):
+        """Тест для проверки невозможности 'CANCELLED', если она отменена"""
+        self.command.start()
+        self.command.cancel()
+        with self.assertRaises(e.TaskCannotCancel):
+            self.command.cancel()
 
     def test_cannot_CANCELLED_task_if_it_done(self):
         """Тест для проверки невозможности 'CANCELLED', если она выполнена"""
@@ -173,6 +188,22 @@ class TestEditInfoTask(unittest.TestCase):
         with self.assertRaises(e.UnavailableID):
             self.edit.edit_id(2)
 
+    def test_cannot_DONE_after_deadline(self):
+        """
+        Тест для проверки невозможности закончить задачу после дедлайна
+        Задача переходит в статус EXPIRED
+        """
+        self.clock = FakeClock(datetime(2026, 1, 12, 12, tzinfo=ZoneInfo("UTC")))
+        self.task2 = TaskFactory.create_task(2, "Task 2", "Description 2", "12 3 2026 12", self.clock)
+        self.command2 = RunCommand(self.task2, self.memory)
+        self.command2.add()
+        self.command2.start()
+        self.edit2 = EditTask(self.task2, self.memory)
+        self.edit2.edit_deadline("15 1 2026")
+
+        with self.assertRaises(e.DeadlineHasExpired):
+            self.command2.complete()
+
 
 class TestTimeTaskFromRepository(unittest.TestCase):
     """Класс для проверки времени задачи из репозитория"""
@@ -205,3 +236,40 @@ class TestTimeTaskFromRepository(unittest.TestCase):
         """Тест для проверки дедлайна задачи"""
         type_task = self.command.find(1)
         self.assertIsInstance(type_task.behaviour, TimedBehavior)
+
+
+class TestJsonTaskRepository(unittest.TestCase):
+    """Проверка сохранения и загрузки задач из JSON."""
+
+    def setUp(self):
+        self.tmp_dir = Path(tempfile.gettempdir())
+        self.json_path = self.tmp_dir / "taskflow_test_json.json"
+
+    def tearDown(self):
+        if self.json_path.exists():
+            self.json_path.unlink()
+
+    def test_save_and_load_tasks(self):
+        """Добавленные задачи сохраняются в JSON и восстанавливаются при новой инициализации."""
+        repo = JsonTaskRepository(self.json_path)
+        task = TaskFactory.create_task(1, "Задача 1", "Описание", "20 3 2026 12")
+        RunCommand(task, repo).add()
+        self.assertTrue(self.json_path.exists())
+
+        repo2 = JsonTaskRepository(self.json_path)
+        loaded = repo2.get_by_id(1)
+        self.assertEqual(loaded.title, "Задача 1")
+        self.assertEqual(loaded.description, "Описание")
+        self.assertIsInstance(loaded.behaviour, TimedBehavior)
+
+    def test_clear_persists_empty_list(self):
+        """После clear() файл содержит пустой список."""
+        repo = JsonTaskRepository(self.json_path)
+        task = TaskFactory.create_task(1, "Задача", None, None)
+        RunCommand(task, repo).add()
+        RunCommand(task, repo).clear()
+        self.assertEqual(repo._tasks, {})
+
+        repo2 = JsonTaskRepository(self.json_path)
+        with self.assertRaises(e.TaskNotFind):
+            repo2.get_by_id(1)

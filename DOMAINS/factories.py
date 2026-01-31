@@ -46,36 +46,36 @@ class RunCommand:
     def __init__(self, task: Task, memory: InMemoryTaskRepository):
         """Инициализация фабрики"""
         self.memory = memory
-        self.task_ = task
-        self.command = TaskCommand(self.task_)
+        self.task = task
+        self.command = TaskCommand(self.task)
 
     def add(self):
         """Фабричный метод для добавления задачи"""
-        self.memory.add_task(self.task_)
+        self.memory.add_task(self.task)
 
     def find(self, id_) -> Task:
         """Фабричный метод для нахождения задачи"""
         return self.memory.get_by_id(id_)
 
     def clear(self):
-        """Фабричный метод для очистки задачи"""
-        self.memory._tasks.clear()
+        """Фабричный метод для очистки всех задач в репозитории"""
+        self.memory.clear()
 
     def start(self) -> None:
         """Фабричный метод для запуска задачи"""
         self.command.start()
         # Обновляем задачу в репозитории
-        self.memory.update_task(self.task_)
+        self.memory.update_task(self.task)
 
     def complete(self) -> None:
         """Фабричный метод для завершения задачи"""
         self.command.complete()
-        self.memory.update_task(self.task_)
+        self.memory.update_task(self.task)
 
     def cancel(self) -> None:
         """Фабричный метод для отмены задачи"""
         self.command.cancel()
-        self.memory.update_task(self.task_)
+        self.memory.update_task(self.task)
 
 
 class EditTask:
@@ -84,45 +84,48 @@ class EditTask:
     def __init__(self, task: Task, memory: InMemoryTaskRepository) -> None:
         """Инициализация фабрики"""
         self.memory = memory
-        self.task_ = task
-        self.edit = TaskEdit(self.task_)
+        self.task = task
+        self.edit = TaskEdit(self.task)
 
     def edit_id(self, new_id: int) -> None:
         """Фабричный метод для редактирования id задачи"""
         # Сохраняем старый ID
-        old_id = self.task_.id_task
+        old_id = self.task.id_task
 
-        if RunCommand(self.task_, self.memory).find(new_id):
-            raise e.UnavailableID
+        try:
+            if RunCommand(self.task, self.memory).find(new_id):
+                raise e.UnavailableID
+        except e.TaskNotFind:
+            pass
 
         # Изменяем ID задачи
         self.edit.edit_id(new_id)
 
         # Удаляем старую запись и добавляем новую с новым ID
-        if self.memory._tasks.get(old_id, False):
+        if old_id in self.memory._tasks:
             del self.memory._tasks[old_id]
 
-        RunCommand(self.task_, self.memory).add()
+        RunCommand(self.task, self.memory).add()
 
     def edit_title(self, new_title: str) -> None:
         """Фабричный метод для редактирования заголовка задачи"""
         self.edit.edit_title(new_title)
-        self.memory.update_task(self.task_)
+        self.memory.update_task(self.task)
 
     def edit_description(self, description: str) -> None:
         """Фабричный метод для редактирования описания задачи"""
         self.edit.edit_description(description)
-        self.memory.update_task(self.task_)
+        self.memory.update_task(self.task)
 
     def edit_deadline(self, deadline: str) -> None:
         """Фабричный метод для редактирования дедлайна задачи"""
         self.edit.edit_deadline(ParsingDate(deadline).date)
-        self.memory.update_task(self.task_)
+        self.memory.update_task(self.task)
 
     def edit_updated_at(self, date: datetime) -> None:
         """Фабричный метод для редактирования даты обновления задачи"""
         self.edit.edit_updated_at(date)
-        self.memory.update_task(self.task_)
+        self.memory.update_task(self.task)
 
 
 class OtherCommands:
