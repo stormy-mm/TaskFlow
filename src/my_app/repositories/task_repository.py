@@ -26,8 +26,9 @@ class InMemoryTaskRepository:
 
     def delete(self, task_id: int) -> None:
         """Удаление задачи по идентификатору."""
-        if not self.get_by_id(task_id):
-            del self._tasks[task_id]
+        if task_id not in self._tasks:
+            raise e.TaskNotFind
+        del self._tasks[task_id]
 
     def update_task(self, task: Task) -> None:
         """Функция для обновления задачи"""

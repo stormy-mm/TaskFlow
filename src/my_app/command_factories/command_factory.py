@@ -23,7 +23,7 @@ class TaskFactory:
     def create_task(
             id_task: int,
             title: str,
-            description: str,
+            description: str | None,
             deadline: str | None,
             date: Optional[datetime] = None,
             get_now: Optional[Callable[[], datetime]] = None,

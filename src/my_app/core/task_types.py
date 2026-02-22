@@ -28,6 +28,6 @@ class TimedBehavior(TaskBehaviour):
         self._get_now = get_now or Clock.now()
 
     def can_complete(self, task, status) -> bool:
-        if self._get_now <= task.deadline:
+        if self._get_now() <= task.deadline:
             return CheckStatus(task.status, status).execute()
         raise e.DeadlineHasExpired
