@@ -1,6 +1,8 @@
+from datetime import datetime
+
 import exceptions as e
 
-from MESSAGES.status import Status as St
+from MESSAGES.status import Status as St, Status
 
 
 class ICheck:
@@ -43,3 +45,18 @@ class CheckChangeStatusTask:
     def can_change_to_cancel(self) -> bool:
         """Проверка разрешения изменения статуса задачи на CANCELLED"""
         return ICheck.can_change_status(self.task_status, e.TaskCannotCancel, St.DONE, St.CANCELLED)
+
+
+class CheckOVERDUEStatus:
+    """Класс для проверки статуса задачи на OVERDUE"""
+    def __init__(self, deadline: datetime, created_at: datetime):
+        """Инициализация дедлайна и времени создания задачи"""
+        self.deadline = deadline
+        self.created_at = created_at
+
+    def run(self) -> Status:
+        """Запуск проверки"""
+        if self.deadline is not None:
+            if self.deadline < self.created_at:
+                return St.OVERDUE
+        return St.NEW
