@@ -1,20 +1,19 @@
 import tempfile
 import unittest
-from src.my_app.common import exceptions as e
+
 from pathlib import Path
 
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from src import Task
-from src import FakeClock
-from src import TimedBehavior
-from src import InMemoryTaskRepository, JsonTaskRepository
-from src import TaskFactory, RunCommand, EditTask, OtherCommands
-from src import ParsingDate
-
-from src.my_app.common.messages.cli_status import Status as St
-
+from my_app.common import exceptions as e
+from my_app.core.task_manager import Task
+from my_app.core.clock import FakeClock
+from my_app.core.task_types import TimedBehavior
+from my_app.command_factories.command_factory import TaskFactory, RunCommandFactory, EditTaskFactory, OtherCommandsFactory
+from my_app.cli.date_parser import ParsingDate
+from my_app.common.messages import Status as St
+from my_app.repositories.task_repository import JsonTaskRepository
 
 
 class TestInMemoryTaskRepository(unittest.TestCase):
@@ -23,7 +22,7 @@ class TestInMemoryTaskRepository(unittest.TestCase):
     def setUp(self):
         """Автоматически вызывается перед каждым тестом"""
         self.task = TaskFactory.create_task(1, "Task 1", "Description 1", "20 3 2026 12")
-        self.command = RunCommand(self.task, InMemoryTaskRepository())
+        self.command = RunCommandFactory(self.task, JsonTaskRepository(r"C:\Programming\TaskFlow\tasks.json"))
         self.command.add()
 
     def tearDown(self):
@@ -42,7 +41,7 @@ class TestInMemoryTaskRepository(unittest.TestCase):
     def test_can_no_input_description(self):
         """Тест для проверки возможности не вводить описание задачи"""
         self.task2 = TaskFactory.create_task(2, "Task 2", None, "20 3 2026 12")
-        self.command2 = RunCommand(self.task2, InMemoryTaskRepository())
+        self.command2 = RunCommandFactory(self.task2, JsonTaskRepository(r"C:\Programming\TaskFlow\tasks.json"))
         self.command2.add()
         self.assertIsNone(self.command2.find(2).description)
 
@@ -69,9 +68,9 @@ class TestStatusTaskFromRepository(unittest.TestCase):
 
     def setUp(self):
         """Автоматически вызывается перед каждым тестом"""
-        self.memory = InMemoryTaskRepository()
+        self.memory = JsonTaskRepository(r"C:\Programming\TaskFlow\tasks.json")
         self.task1 = TaskFactory.create_task(1, "Task 1", "Description 1", "12 3 2026 12")
-        self.command = RunCommand(self.task1, self.memory)
+        self.command = RunCommandFactory(self.task1, self.memory)
         self.command.add()
 
     def tearDown(self):
@@ -127,17 +126,17 @@ class TestStatusTaskFromRepository(unittest.TestCase):
         """Тест для проверки получения словаря после команды 'LIST'"""
         self.task2 = TaskFactory.create_task(456, "ДР Киры", "Поздравить", "23 9 2026")
         self.task3 = TaskFactory.create_task(3, "324", "что то такое", "")
-        self.command2 = RunCommand(self.task2, self.memory)
+        self.command2 = RunCommandFactory(self.task2, self.memory)
         self.command2.add()
-        self.command3 = RunCommand(self.task3, self.memory)
+        self.command3 = RunCommandFactory(self.task3, self.memory)
         self.command3.add()
 
-        self.assertIsInstance(OtherCommands(self.memory).list(), dict)
+        self.assertIsInstance(OtherCommandsFactory(self.memory).list(), dict)
 
     def test_cannot_add_task_id_to_an_existing_id(self):
         """Тест для проверки невозможности добавления задачи с существующим id"""
         self.task2 = TaskFactory.create_task(1, "Task 1", "Description 1", "12 3 2026 12")
-        self.command2 = RunCommand(self.task2, self.memory)
+        self.command2 = RunCommandFactory(self.task2, self.memory)
         with self.assertRaises(e.TaskAlreadyExists):
             self.command2.add()
 
@@ -150,7 +149,7 @@ class TestStatusTaskFromRepository(unittest.TestCase):
     def test_status_task_OVERDUE_if_it_add_deadline(self):
         """Тест для проверки статуса задачи OVERDUE, если она добавлена с истекшим дедлайном"""
         self.task2 = TaskFactory.create_task(3, "Task 1", "Description 1", "12 1 2026")
-        self.command2 = RunCommand(self.task2, self.memory)
+        self.command2 = RunCommandFactory(self.task2, self.memory)
         self.command2.add()
         self.assertEqual(self.command2.find(3).status, St.OVERDUE)
 
@@ -159,11 +158,11 @@ class TestEditInfoTask(unittest.TestCase):
 
     def setUp(self):
         """Автоматически вызывается перед каждым тестом"""
-        self.memory = InMemoryTaskRepository()
+        self.memory = JsonTaskRepository(r"C:\Programming\TaskFlow\tasks.json")
         self.task1 = TaskFactory.create_task(1, "Task 1", "Description 1", "12 3 2026 12")
-        self.command = RunCommand(self.task1, self.memory)
+        self.command = RunCommandFactory(self.task1, self.memory)
         self.command.add()
-        self.edit = EditTask(self.task1, self.memory)
+        self.edit = EditTaskFactory(self.task1, self.memory)
 
     def tearDown(self):
         """Автоматически вызывается после каждого теста"""
@@ -193,8 +192,8 @@ class TestEditInfoTask(unittest.TestCase):
     def test_cannot_edit_task_id_to_an_existing_id(self):
         """Тест для проверки невозможности изменить ID задачи на существующий ID"""
         self.task2 = TaskFactory.create_task(2, "Task 2", "Description 2", "")
-        self.command2 = RunCommand(self.task2, self.memory)
-        self.edit2 = EditTask(self.task2, self.memory)
+        self.command2 = RunCommandFactory(self.task2, self.memory)
+        self.edit2 = EditTaskFactory(self.task2, self.memory)
         self.command2.add()
 
         with self.assertRaises(e.UnavailableID):
@@ -211,10 +210,10 @@ class TestEditInfoTask(unittest.TestCase):
             2, "Task 2", "Description 2", "12 3 2026 12",
             date=self.clock.now, get_now=get_now,
         )
-        self.command2 = RunCommand(self.task2, self.memory, get_now=get_now)
+        self.command2 = RunCommandFactory(self.task2, self.memory, get_now=get_now)
         self.command2.add()
         self.command2.start()
-        self.edit2 = EditTask(self.task2, self.memory)
+        self.edit2 = EditTaskFactory(self.task2, self.memory)
         self.edit2.edit_deadline("15 1 2026")
         self.clock.advance(timedelta(days=3))
 
@@ -233,10 +232,10 @@ class TestTimeTaskFromRepository(unittest.TestCase):
             1, "Task 1", "Description 1", "12 1 2025",
             date=self.clock.now, get_now=get_now,
         )
-        self.memory = InMemoryTaskRepository()
-        self.command = RunCommand(self.task1, self.memory, get_now=get_now)
+        self.memory = JsonTaskRepository(r"C:\Programming\TaskFlow\tasks.json")
+        self.command = RunCommandFactory(self.task1, self.memory, get_now=get_now)
         self.command.add()
-        self.edit = EditTask(self.task1, self.memory)
+        self.edit = EditTaskFactory(self.task1, self.memory)
 
     def tearDown(self):
         """Автоматически вызывается после каждого теста"""
@@ -274,7 +273,7 @@ class TestJsonTaskRepository(unittest.TestCase):
         """Добавленные задачи сохраняются в JSON и восстанавливаются при новой инициализации."""
         repo = JsonTaskRepository(self.json_path)
         task = TaskFactory.create_task(1, "Задача 1", "Описание", "20 3 2026 12")
-        RunCommand(task, repo).add()
+        RunCommandFactory(task, repo).add()
         self.assertTrue(self.json_path.exists())
 
         repo2 = JsonTaskRepository(self.json_path)
@@ -286,9 +285,9 @@ class TestJsonTaskRepository(unittest.TestCase):
     def test_clear_persists_empty_list(self):
         """После clear() файл содержит пустой список."""
         repo = JsonTaskRepository(self.json_path)
-        task = TaskFactory.create_task(1, "Задача", "", "")
-        RunCommand(task, repo).add()
-        RunCommand(task, repo).clear()
+        task = TaskFactory.create_task(1, "Задача", None, "")
+        RunCommandFactory(task, repo).add()
+        RunCommandFactory(task, repo).clear()
         self.assertEqual(repo._tasks, {})
 
         repo2 = JsonTaskRepository(self.json_path)
