@@ -1,26 +1,20 @@
 from datetime import datetime
+
 from typing import Callable, Optional
 
-from src.my_app.core.clock import Clock
-from src.my_app.core.task_types import TaskBehaviour, SimpleBehavior, TimedBehavior
-
-from src.my_app.common.messages import Status as St
-
-
-def _status_from_string(s: str) -> St:
-    """Преобразование строки статуса в значение Status."""
-    return getattr(St, s) if hasattr(St, s) else St.NEW
+from my_app.core.clock import Clock
+from my_app.core.task_types import TaskBehaviour, SimpleBehavior, TimedBehavior
+from my_app.common.messages import Status as St
 
 
 class Task:
     """Запись информации о задачи"""
-
     def __init__(
             self,
             id_task: int,
             title: str,
             description: Optional[str],
-            status: St,
+            status: str,
             behaviour: TaskBehaviour,
             deadline: Optional[datetime],
             date: datetime,
@@ -42,7 +36,7 @@ class Task:
         return self._id_task
 
     @property
-    def status(self) -> St:
+    def status(self) -> str:
         """Получение статуса задачи"""
         return self._status
 
@@ -85,7 +79,7 @@ class Task:
             id_task=d["id_task"],
             title=d["title"],
             description=d["description"] or "",
-            status=_status_from_string(d["status"]),
+            status=d["status"],
             behaviour=behaviour,
             deadline=deadline,
             date=datetime.fromisoformat(d["created_at"]),
@@ -95,33 +89,31 @@ class Task:
 
 class TaskCommand:
     """Класс для выполнения команды над задачей"""
-
     def __init__(self, task: Task, get_now: Optional[Callable[[], datetime]] = None):
         self.task = task
-        self._get_now = get_now or (lambda: Clock.now())
+        self._get_now = get_now or Clock.now()
 
     def start(self) -> None:
         """Функция для начала выполнения задачи"""
-        self.task._behaviour.can_complete(self.task, St.IN_PROGRESS)
+        self.task.behaviour.can_complete(self.task, St.IN_PROGRESS)
         self.task._status = St.IN_PROGRESS
         self.task._updated_at = self._get_now()
 
     def complete(self) -> None:
         """Функция для завершения задачи"""
-        self.task._behaviour.can_complete(self.task, St.DONE)
+        self.task.behaviour.can_complete(self.task, St.DONE)
         self.task._status = St.DONE
         self.task._updated_at = self._get_now()
 
     def cancel(self) -> None:
         """Функция для отмены задачи"""
-        self.task._behaviour.can_complete(self.task, St.CANCELLED)
+        self.task.behaviour.can_complete(self.task, St.CANCELLED)
         self.task._status = St.CANCELLED
         self.task._updated_at = self._get_now()
 
 
 class TaskEdit:
     """Класс для редактирования задачи"""
-
     def __init__(self, task: Task):
         self.task = task
 

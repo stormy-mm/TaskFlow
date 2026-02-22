@@ -1,13 +1,13 @@
 import json
-from src.my_app.common import exceptions as e
+
+from my_app.common import exceptions as e
+from my_app.core.task_manager import Task
+
 from pathlib import Path
-
-
 
 
 class InMemoryTaskRepository:
     """Класс для хранения задач в памяти"""
-
     def __init__(self):
         """Инициализация репозитория"""
         self._tasks: dict = {}
@@ -26,9 +26,8 @@ class InMemoryTaskRepository:
 
     def delete(self, task_id: int) -> None:
         """Удаление задачи по идентификатору."""
-        if task_id not in self._tasks:
-            raise e.TaskNotFind
-        del self._tasks[task_id]
+        if not self.get_by_id(task_id):
+            del self._tasks[task_id]
 
     def update_task(self, task: Task) -> None:
         """Функция для обновления задачи"""
@@ -45,7 +44,6 @@ class InMemoryTaskRepository:
 
 class JsonTaskRepository(InMemoryTaskRepository):
     """Репозиторий с сохранением задач в JSON-файл."""
-
     def __init__(self, file_path: str | Path):
         """Инициализация. file_path — путь к JSON-файлу."""
         super().__init__()

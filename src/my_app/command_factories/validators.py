@@ -1,13 +1,11 @@
 from datetime import datetime
 
-from src.my_app.common import exceptions as e
-
-from src.my_app.common.messages import Status as St
+from my_app.common import exceptions as e
+from my_app.common.messages import Status as St
 
 
 class ICheck:
     """Миксин для проверки разрешения изменения статуса задачи"""
-
     @staticmethod
     def can_change_status(status, exception, *statuses) -> bool:
         if status in statuses:
@@ -17,7 +15,6 @@ class ICheck:
 
 class CheckChangeStatusTask:
     """Класс для проверки разрешения изменения статуса задачи"""
-
     def __init__(self, task_status, status):
         """Инициализация статуса задачи"""
         self.task_status = task_status
@@ -32,7 +29,7 @@ class CheckChangeStatusTask:
                 return self.can_change_to_start()
             case St.CANCELLED:
                 return self.can_change_to_cancel()
-        return True
+        return False
 
     def can_change_to_done(self) -> bool:
         """Проверка разрешения изменения статуса задачи на DONE"""
@@ -47,7 +44,7 @@ class CheckChangeStatusTask:
         return ICheck.can_change_status(self.task_status, e.TaskCannotCancel, St.DONE, St.CANCELLED)
 
 
-class CheckOVERDUEStatus:
+class CheckOverdueStatus:
     """Класс для проверки статуса задачи на OVERDUE"""
     def __init__(self, deadline: datetime, created_at: datetime):
         """Инициализация дедлайна и времени создания задачи"""

@@ -1,18 +1,15 @@
 """
 Обработчик команд cli.
-Импортирует только фасад TaskApplication и репозиторий — вся бизнес-логика в ядре.
+Импортирует только фасад TaskApplication и DomainCLI — вся бизнес-логика в ядре.
 """
 
 from my_app.application.task_application import TaskApplication
 from my_app.cli.cli_adapter import DomainCLI
-
-from src.my_app.common.messages import Messages as Ms
-from src.my_app.common.messages import COMMANDS
+from my_app.common.messages import Messages as Ms, COMMANDS
 
 
 class Handler:
     """Обработчик: получает приложение (фасад) и делегирует ему команды."""
-
     def __init__(self, app: TaskApplication):
         self._app = app
         self.handler_cli = DomainCLI
@@ -27,7 +24,8 @@ class Handler:
         """Вывод приветствия (используется из main)."""
         print(Ms.GREETING)
 
-    def handle(self, user_input: str) -> None:
+    def user_handler(self, user_input: str) -> None:
+        """Обработчик пользовательского ввода"""
         parts = user_input.lower().strip().split()
 
         if not parts:
@@ -35,11 +33,14 @@ class Handler:
 
         cmd = parts[0]
         if cmd in COMMANDS:
-            cli = self.handler_cli(self._app, cmd, parts)
+            cli = self.handler_cli(self._app, cmd, parts) # Приложение, команда, аргументы
+
+            # Здесь происходит обработка команды
             result = cli.run()
+
             try:
                 if not result.success or result.success:
-                    print(result.reason)
+                    print(result.reason) # вывод результата
             except AttributeError:
                 ...
         else:

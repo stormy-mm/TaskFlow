@@ -3,7 +3,7 @@ from my_app.common import exceptions as e
 from datetime import datetime
 from typing import Callable, Optional
 
-from my_app.command_factories.validators import CheckOVERDUEStatus
+from my_app.command_factories.validators import CheckOverdueStatus
 from my_app.cli.date_parser import ParsingDate
 from my_app.core.task_manager import Task, TaskCommand, TaskEdit
 from my_app.repositories.task_repository import JsonTaskRepository
@@ -11,7 +11,7 @@ from my_app.core.clock import Clock
 from my_app.core.task_types import SimpleBehavior, TaskBehaviour, TimedBehavior
 
 
-def _default_get_now() -> datetime:
+def default_get_now() -> datetime:
     """Дефолтная функция для получения текущего времени"""
     return Clock.now()
 
@@ -29,15 +29,17 @@ class TaskFactory:
             get_now: Optional[Callable[[], datetime]] = None,
     ) -> Task:
         """Фабричный метод для создания задачи"""
-        get_now = get_now or _default_get_now
-        now = date if date is not None else get_now()
+        get_now = get_now or default_get_now # создаётся объект
+        now = date if date is not None else get_now() # вызов объекта
 
-        behaviour: TaskBehaviour = SimpleBehavior()
-        parsed_deadline: Optional[datetime] = None
+        behaviour: TaskBehaviour = SimpleBehavior() # Простая задача по умолчанию
+
+        parsed_deadline: Optional[datetime] = None # Для дедлайна по умолчанию задаётся None
         if deadline != "":
             parsed_deadline = ParsingDate(deadline).date
-            behaviour = TimedBehavior(parsed_deadline, get_now=get_now)
-        status = CheckOVERDUEStatus(parsed_deadline, now).run()
+            behaviour = TimedBehavior(get_now) # С простой задачи на дедлайн
+
+        status = CheckOverdueStatus(parsed_deadline, now).run()
 
         return Task(
             id_task=id_task,
@@ -51,9 +53,8 @@ class TaskFactory:
         )
 
 
-class RunCommand:
+class RunCommandFactory:
     """Фабрика для запуска команды"""
-
     def __init__(
             self,
             task: Task,
@@ -63,10 +64,10 @@ class RunCommand:
         """Инициализация фабрики"""
         self.memory = memory
         self.task = task
-        self._get_now = get_now or _default_get_now
-        self.command = TaskCommand(self.task, get_now=self._get_now)
+        self.get_now = get_now or default_get_now
+        self.command = TaskCommand(self.task, get_now=self.get_now)
 
-    def add(self):
+    def add(self) -> None:
         """Фабричный метод для добавления задачи"""
         self.memory.add_task(self.task)
 
@@ -74,14 +75,13 @@ class RunCommand:
         """Фабричный метод для нахождения задачи"""
         return self.memory.get_by_id(id_)
 
-    def clear(self):
+    def clear(self) -> None:
         """Фабричный метод для очистки всех задач в репозитории"""
         self.memory.clear()
 
     def start(self) -> None:
         """Фабричный метод для запуска задачи"""
         self.command.start()
-        # Обновляем задачу в репозитории
         self.memory.update_task(self.task)
 
     def complete(self) -> None:
@@ -99,9 +99,8 @@ class RunCommand:
         self.memory.delete(self.task.id_task)
 
 
-class EditTask:
+class EditTaskFactory:
     """Фабрика для редактирования задачи"""
-
     def __init__(self, task: Task, memory: JsonTaskRepository) -> None:
         """Инициализация фабрики"""
         self.memory = memory
@@ -141,7 +140,7 @@ class EditTask:
         self.memory.update_task(self.task)
 
 
-class OtherCommands:
+class OtherCommandsFactory:
     """Фабрика других команд"""
 
     def __init__(self, memory: JsonTaskRepository):

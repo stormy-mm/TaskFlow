@@ -1,25 +1,27 @@
 from datetime import datetime
-from typing import Optional, Callable
 
-from my_app.command_factories.command_factory import _default_get_now, TaskFactory, RunCommand, EditTask, OtherCommands
+from typing import Optional
+
+from my_app.command_factories.command_factory import (
+    default_get_now,
+    TaskFactory,
+    RunCommandFactory,
+    EditTaskFactory,
+    OtherCommandsFactory
+)
 from my_app.core.task_manager import Task
-from my_app.repositories.task_repository import InMemoryTaskRepository
-
+from my_app.repositories.task_repository import JsonTaskRepository
 
 
 class TaskApplication:
     """
     Единая точка входа для команд над задачами.
-    cli импортирует только этот класс и передаёт ему репозиторий и (опционально) источник времени.
+    CLI импортирует только этот класс и передаёт ему репозиторий и (опционально) источник времени.
     """
 
-    def __init__(
-            self,
-            repository: InMemoryTaskRepository,
-            get_now: Optional[Callable[[], datetime]] = None,
-    ):
-        self._repo = repository
-        self._get_now = get_now or _default_get_now
+    def __init__(self, repository: JsonTaskRepository):
+        self.repo = repository
+        self.get_now_datetime = default_get_now
 
     def add(
             self,
@@ -30,63 +32,66 @@ class TaskApplication:
     ) -> None:
         """Создать и сохранить задачу."""
         task = TaskFactory.create_task(
-            id_task, title, description, deadline,
-            get_now=self._get_now,
+            id_task,
+            title,
+            description,
+            deadline,
+            get_now=self.get_now_datetime,
         )
-        RunCommand(task, self._repo, get_now=self._get_now).add()
+        RunCommandFactory(task, self.repo, self.get_now_datetime).add()
 
     def start(self, task_id: int) -> None:
         """Перевести задачу в статус IN_PROGRESS."""
-        task = self._repo.get_by_id(task_id)
-        RunCommand(task, self._repo, get_now=self._get_now).start()
+        task = self.repo.get_by_id(task_id)
+        RunCommandFactory(task, self.repo, self.get_now_datetime).start()
 
     def complete(self, task_id: int) -> None:
         """Перевести задачу в статус DONE."""
-        task = self._repo.get_by_id(task_id)
-        RunCommand(task, self._repo, get_now=self._get_now).complete()
+        task = self.repo.get_by_id(task_id)
+        RunCommandFactory(task, self.repo, self.get_now_datetime).complete()
 
     def cancel(self, task_id: int) -> None:
         """Перевести задачу в статус CANCELLED."""
-        task = self._repo.get_by_id(task_id)
-        RunCommand(task, self._repo, get_now=self._get_now).cancel()
+        task = self.repo.get_by_id(task_id)
+        RunCommandFactory(task, self.repo, self.get_now_datetime).cancel()
 
     def list_tasks(self) -> dict:
         """Вернуть все задачи (id -> Task)."""
-        return OtherCommands(self._repo).list()
+        return OtherCommandsFactory(self.repo).list()
 
     def clear(self) -> None:
         """Очистить список задач."""
-        self._repo.clear()
+        self.repo.clear()
 
     def delete(self, task_id: int) -> None:
         """Удалить задачу по id."""
-        self._repo.delete(task_id)
+        self.repo.delete(task_id)
 
     def show(self, task_id: int) -> Task:
         """Вернуть задачу по id."""
-        return self._repo.get_by_id(task_id)
+        return self.repo.get_by_id(task_id)
 
     def edit_id(self, task_id: int, new_id: int) -> None:
         """Изменить id задачи."""
-        task = self._repo.get_by_id(task_id)
-        EditTask(task, self._repo).edit_id(new_id)
+        task = self.repo.get_by_id(task_id)
+        EditTaskFactory(task, self.repo).edit_id(new_id)
 
     def edit_title(self, task_id: int, new_title: str) -> None:
         """Изменить заголовок задачи."""
-        task = self._repo.get_by_id(task_id)
-        EditTask(task, self._repo).edit_title(new_title)
+        task = self.repo.get_by_id(task_id)
+        EditTaskFactory(task, self.repo).edit_title(new_title)
 
     def edit_description(self, task_id: int, description: str) -> None:
         """Изменить описание задачи."""
-        task = self._repo.get_by_id(task_id)
-        EditTask(task, self._repo).edit_description(description)
+        task = self.repo.get_by_id(task_id)
+        EditTaskFactory(task, self.repo).edit_description(description)
 
     def edit_deadline(self, task_id: int, deadline: str) -> None:
         """Изменить дедлайн задачи."""
-        task = self._repo.get_by_id(task_id)
-        EditTask(task, self._repo).edit_deadline(deadline)
+        task = self.repo.get_by_id(task_id)
+        EditTaskFactory(task, self.repo).edit_deadline(deadline)
 
     def edit_updated_at(self, task_id: int, date: datetime) -> None:
         """Изменить дату обновления задачи."""
-        task = self._repo.get_by_id(task_id)
-        EditTask(task, self._repo).edit_updated_at(date)
+        task = self.repo.get_by_id(task_id)
+        EditTaskFactory(task, self.repo).edit_updated_at(date)

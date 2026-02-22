@@ -5,7 +5,6 @@ from my_app.core.clock import Clock
 
 class ParsingDate:
     """Класс для парсинга даты"""
-
     def __init__(self, date_string: str = "", view_date: datetime = datetime):
         """Функция для инициализации класса"""
         self._date = Clock.set_deadline(date_string) if date_string != "" else ...

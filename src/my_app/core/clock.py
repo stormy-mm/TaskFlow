@@ -2,7 +2,7 @@ from datetime import datetime
 
 from zoneinfo import ZoneInfo
 
-from src.my_app.common.exceptions import ParsingError
+from my_app.common.exceptions import ParsingError
 
 
 class Clock:
