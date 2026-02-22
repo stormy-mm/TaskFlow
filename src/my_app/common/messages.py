@@ -1,5 +1,14 @@
 from colorama import Style, Fore
 
+# Список допустимых команд. Проверка "cmd in COMMANDS".
+# Вызов метода делается в DomainCLI.run() по имени команды на переданном экземпляре app.
+COMMANDS = frozenset({
+    "add", "start", "cancel", "complete", "list",
+    "edit", "clear", "delete", "show", "exit"
+})
+
+EDIT_COMMANDS = frozenset({"id", "title", "description", "deadline", "all"})
+
 
 class Messages:
     """Класс сообщений"""
@@ -32,3 +41,12 @@ class Messages:
         f"дедлайн должен быть в формате ДД ММ ГГГГ ЧЧ ММ СС (12 1 2025 8 0)\n"
         f"Введите дедлайн (В случае отсутствия дедлайна нажмите {Fore.LIGHTCYAN_EX}Enter{Style.RESET_ALL}) >>>  ",
     )
+
+
+class Status:
+    """Класс статусов"""
+    NEW = "NEW"
+    IN_PROGRESS = "IN_PROGRESS"
+    DONE = "DONE"
+    CANCELLED = "CANCELLED"
+    OVERDUE = "OVERDUE"

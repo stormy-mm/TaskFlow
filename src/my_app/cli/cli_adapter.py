@@ -1,11 +1,11 @@
-import exceptions as e
+from my_app.common import exceptions as e
 
-from src.TASK_MANAGER import Task
-from src.parsing import ParsingDate
-from src.task_application import TaskApplication
+from my_app.core.task_manager import Task
+from my_app.cli.date_parser import ParsingDate
+from my_app.application.task_application import TaskApplication
 
-from messages.commands import EDIT_COMMANDS
-from messages.messages import Messages as Ms
+from my_app.common.messages import EDIT_COMMANDS
+from my_app.common.messages import Messages as Ms
 
 
 class InputOutput:
@@ -39,7 +39,7 @@ class InputOutput:
         print(f"Дедлайн: {ParsingDate(view_date=deadline).date_format if deadline else 'Отсутствует'}")
 
     @staticmethod
-    def run_edit(id_: int, app: TaskApplication) -> str:
+    def run_edit(id_: int, app: TaskApplication) -> None:
         """Редактирование задачи"""
         user_in = input("Сразу после ввода атрибута вводите новое значение\n"
                         "Редактировать..\n"
@@ -98,12 +98,12 @@ class DomainCLI:
         except (IndexError, ValueError):
             raise e.IncorrectInput
 
-    def run(self) -> OperationResult:
+    def run(self) -> OperationResult | None:
         """По имени команды вызвать нужный метод _app с нужными аргументами."""
         app = self._app
         cmd = self._cmd
         parts = self._parts
-        IO = InputOutput()
+        io = InputOutput()
 
         try:
             match cmd:
@@ -124,19 +124,19 @@ class DomainCLI:
                     if not tasks:
                         return OperationResult(False, "Список задач пуст")
                     for task in tasks.values():
-                        IO.run_show(task)
+                        io.run_show(task)
                     return OperationResult(True)
                 case "add":
-                    app.add(*IO.run_add())
+                    app.add(*io.run_add())
                     return OperationResult(True, "Задача добавлена")
                 case "show":
                     task = app.show(self._parse_id(parts))
-                    IO.run_show(task)
+                    io.run_show(task)
                     return OperationResult(True)
                 case "edit":
                     id_ = self._parse_id(parts)
                     app.show(id_)
-                    IO.run_edit(id_, app)
+                    io.run_edit(id_, app)
                     return OperationResult(True, "Задача изменена")
                 case "clear":
                     app.clear()

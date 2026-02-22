@@ -1,15 +1,16 @@
 from datetime import datetime
 from typing import Optional, Callable
 
-from src.TASK_MANAGER import Task
-from src.factories import _default_get_now, TaskFactory, RunCommand, OtherCommands, EditTask
-from src.repository_task import InMemoryTaskRepository
+from my_app.command_factories.command_factory import _default_get_now, TaskFactory, RunCommand, EditTask, OtherCommands
+from my_app.core.task_manager import Task
+from my_app.repositories.task_repository import InMemoryTaskRepository
+
 
 
 class TaskApplication:
     """
     Единая точка входа для команд над задачами.
-    CLI импортирует только этот класс и передаёт ему репозиторий и (опционально) источник времени.
+    cli импортирует только этот класс и передаёт ему репозиторий и (опционально) источник времени.
     """
 
     def __init__(

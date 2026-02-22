@@ -1,13 +1,13 @@
 """
-Обработчик команд CLI.
+Обработчик команд cli.
 Импортирует только фасад TaskApplication и репозиторий — вся бизнес-логика в ядре.
 """
 
-from src.task_application import TaskApplication
-from src.domain_cli import DomainCLI
+from my_app.application.task_application import TaskApplication
+from my_app.cli.cli_adapter import DomainCLI
 
-from messages.messages import Messages as Ms
-from messages.commands import COMMANDS
+from src.my_app.common.messages import Messages as Ms
+from src.my_app.common.messages import COMMANDS
 
 
 class Handler:
@@ -27,7 +27,7 @@ class Handler:
         """Вывод приветствия (используется из main)."""
         print(Ms.GREETING)
 
-    def handler(self, user_input: str) -> None:
+    def handle(self, user_input: str) -> None:
         parts = user_input.lower().strip().split()
 
         if not parts:

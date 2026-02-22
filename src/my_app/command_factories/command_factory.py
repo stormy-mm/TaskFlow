@@ -1,14 +1,14 @@
-import exceptions as e
+from my_app.common import exceptions as e
 
 from datetime import datetime
 from typing import Callable, Optional
 
-from src.checks import CheckOVERDUEStatus
-from src.parsing import ParsingDate
-from src.TASK_MANAGER import Task, TaskCommand, TaskEdit
-from src.repository_task import JsonTaskRepository
-from src.time_clock import Clock
-from src.types_task import SimpleBehavior, TaskBehaviour, TimedBehavior
+from my_app.command_factories.validators import CheckOVERDUEStatus
+from my_app.cli.date_parser import ParsingDate
+from my_app.core.task_manager import Task, TaskCommand, TaskEdit
+from my_app.repositories.task_repository import JsonTaskRepository
+from my_app.core.clock import Clock
+from my_app.core.task_types import SimpleBehavior, TaskBehaviour, TimedBehavior
 
 
 def _default_get_now() -> datetime:

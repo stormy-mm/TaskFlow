@@ -2,7 +2,7 @@ from datetime import datetime
 
 from zoneinfo import ZoneInfo
 
-from exceptions import ParsingError
+from src.my_app.common.exceptions import ParsingError
 
 
 class Clock:
@@ -16,7 +16,7 @@ class Clock:
         except (ValueError, TypeError):
             raise ParsingError
 
-        DATE_DICT = {
+        date_dict = {
             'day': 0,
             'month': 0,
             'year': 0,
@@ -26,15 +26,15 @@ class Clock:
         }
 
         try:
-            DATE_DICT['day'] = day
-            DATE_DICT['month'] = month
-            DATE_DICT['year'] = year
-            DATE_DICT['hour'] = time[0]
-            DATE_DICT['minute'] = time[1]
-            DATE_DICT['second'] = time[2]
+            date_dict['day'] = day
+            date_dict['month'] = month
+            date_dict['year'] = year
+            date_dict['hour'] = time[0]
+            date_dict['minute'] = time[1]
+            date_dict['second'] = time[2]
         except IndexError:
             pass
-        return DATE_DICT.get("year"), DATE_DICT.get("month"), DATE_DICT.get("day"), *tuple(DATE_DICT.values())[3:]
+        return date_dict.get("year"), date_dict.get("month"), date_dict.get("day"), *tuple(date_dict.values())[3:]
 
     @staticmethod
     def now() -> datetime:

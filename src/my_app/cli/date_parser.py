@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from src.time_clock import Clock
+from my_app.core.clock import Clock
 
 
 class ParsingDate:

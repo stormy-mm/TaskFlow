@@ -1,8 +1,8 @@
 from datetime import datetime
 
-import exceptions as e
+from src.my_app.common import exceptions as e
 
-from messages.status import Status as St, Status
+from src.my_app.common.messages import Status as St
 
 
 class ICheck:
@@ -54,7 +54,7 @@ class CheckOVERDUEStatus:
         self.deadline = deadline
         self.created_at = created_at
 
-    def run(self) -> Status:
+    def run(self) -> str:
         """Запуск проверки"""
         if self.deadline is not None:
             if self.deadline < self.created_at:

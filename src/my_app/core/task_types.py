@@ -1,13 +1,13 @@
-import exceptions as e
+from src.my_app.common import exceptions as e
+
+from abc import ABC, abstractmethod
 
 from datetime import datetime
 from typing import Callable, Optional
 
-from abc import ABC, abstractmethod
-
-from src.checks import CheckChangeStatusTask as CheckStatus
-from src.time_clock import Clock
-from messages.status import Status
+from my_app.command_factories.validators import CheckChangeStatusTask as CheckStatus
+from my_app.core.clock import Clock
+from my_app.common.messages import Status
 
 
 class TaskBehaviour(ABC):
