@@ -126,7 +126,7 @@ class TestStatusTaskFromRepository(unittest.TestCase):
     def test_dict_command_LIST(self):
         """Тест для проверки получения словаря после команды 'LIST'"""
         self.task2 = TaskFactory.create_task(456, "ДР Киры", "Поздравить", "23 9 2026")
-        self.task3 = TaskFactory.create_task(3, "324", "что то такое", None)
+        self.task3 = TaskFactory.create_task(3, "324", "что то такое", "")
         self.command2 = RunCommand(self.task2, self.memory)
         self.command2.add()
         self.command3 = RunCommand(self.task3, self.memory)
@@ -141,6 +141,18 @@ class TestStatusTaskFromRepository(unittest.TestCase):
         with self.assertRaises(e.TaskAlreadyExists):
             self.command2.add()
 
+    def test_can_del_task(self):
+        """Тест для проверки удаления задачи"""
+        self.command.delete()
+        with self.assertRaises(e.TaskNotFind):
+            self.command.find(1)
+
+    def test_status_task_OVERDUE_if_it_add_deadline(self):
+        """Тест для проверки статуса задачи OVERDUE, если она добавлена с истекшим дедлайном"""
+        self.task2 = TaskFactory.create_task(3, "Task 1", "Description 1", "12 1 2026")
+        self.command2 = RunCommand(self.task2, self.memory)
+        self.command2.add()
+        self.assertEqual(self.command2.find(3).status, St.OVERDUE)
 
 class TestEditInfoTask(unittest.TestCase):
     """Класс для проверки редактирования информации о задаче"""
@@ -180,7 +192,7 @@ class TestEditInfoTask(unittest.TestCase):
 
     def test_cannot_edit_task_id_to_an_existing_id(self):
         """Тест для проверки невозможности изменить ID задачи на существующий ID"""
-        self.task2 = TaskFactory.create_task(2, "Task 2", "Description 2", None)
+        self.task2 = TaskFactory.create_task(2, "Task 2", "Description 2", "")
         self.command2 = RunCommand(self.task2, self.memory)
         self.edit2 = EditTask(self.task2, self.memory)
         self.command2.add()
@@ -190,16 +202,21 @@ class TestEditInfoTask(unittest.TestCase):
 
     def test_cannot_DONE_after_deadline(self):
         """
-        Тест для проверки невозможности закончить задачу после дедлайна
-        Задача переходит в статус EXPIRED
+        Тест для проверки невозможности закончить задачу после дедлайна.
+        Дедлайн сдвигается в прошлое, время продвигается — complete() должен выбросить.
         """
         self.clock = FakeClock(datetime(2026, 1, 12, 12, tzinfo=ZoneInfo("UTC")))
-        self.task2 = TaskFactory.create_task(2, "Task 2", "Description 2", "12 3 2026 12", self.clock)
-        self.command2 = RunCommand(self.task2, self.memory)
+        get_now = lambda: self.clock.now
+        self.task2 = TaskFactory.create_task(
+            2, "Task 2", "Description 2", "12 3 2026 12",
+            date=self.clock.now, get_now=get_now,
+        )
+        self.command2 = RunCommand(self.task2, self.memory, get_now=get_now)
         self.command2.add()
         self.command2.start()
         self.edit2 = EditTask(self.task2, self.memory)
         self.edit2.edit_deadline("15 1 2026")
+        self.clock.advance(timedelta(days=3))
 
         with self.assertRaises(e.DeadlineHasExpired):
             self.command2.complete()
@@ -211,9 +228,13 @@ class TestTimeTaskFromRepository(unittest.TestCase):
     def setUp(self):
         """Автоматически вызывается перед каждым тестом"""
         self.clock = FakeClock(datetime(2026, 1, 12, 12, tzinfo=ZoneInfo("UTC")))
-        self.task1 = TaskFactory.create_task(1, "Task 1", "Description 1", "12 1 2025", self.clock.now)
+        get_now = lambda: self.clock.now
+        self.task1 = TaskFactory.create_task(
+            1, "Task 1", "Description 1", "12 1 2025",
+            date=self.clock.now, get_now=get_now,
+        )
         self.memory = InMemoryTaskRepository()
-        self.command = RunCommand(self.task1, self.memory)
+        self.command = RunCommand(self.task1, self.memory, get_now=get_now)
         self.command.add()
         self.edit = EditTask(self.task1, self.memory)
 
@@ -265,7 +286,7 @@ class TestJsonTaskRepository(unittest.TestCase):
     def test_clear_persists_empty_list(self):
         """После clear() файл содержит пустой список."""
         repo = JsonTaskRepository(self.json_path)
-        task = TaskFactory.create_task(1, "Задача", None, None)
+        task = TaskFactory.create_task(1, "Задача", "", "")
         RunCommand(task, repo).add()
         RunCommand(task, repo).clear()
         self.assertEqual(repo._tasks, {})
