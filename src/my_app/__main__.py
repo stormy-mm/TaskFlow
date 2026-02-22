@@ -1,6 +1,6 @@
-from src.repository_task import JsonTaskRepository
-from src.task_application import TaskApplication
-from src.handlers import Handler
+from my_app.repositories.task_repository import JsonTaskRepository
+from my_app.application.task_application import TaskApplication
+from my_app.cli.input_handlers import Handler
 
 
 def main():
@@ -11,8 +11,7 @@ def main():
 
     Handler.show_greeting()
     while True:
-        us_in = input(">>> ")
-        handler.handler(us_in)
+        handler.handle(input(">>> "))
 
 
 if __name__ == "__main__":
