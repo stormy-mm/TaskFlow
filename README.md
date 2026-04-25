@@ -56,7 +56,7 @@ pip install -e .
 ### 4) Запуск приложения
 
 ```bash
-python -m my_app
+python -m task_flow
 ```
 
 После запуска откроется интерактивный режим (`>>>`).
