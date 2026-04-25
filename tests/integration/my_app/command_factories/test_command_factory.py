@@ -40,7 +40,7 @@ class TestEditInfoTask:
         """Тест для проверки редактирования deadline задачи"""
         self.edit.edit_deadline("12 1 2027 12 23")
         expected = datetime(2027, 1, 12, 12, 23, 0, tzinfo=ZoneInfo("UTC"))
-        assert self.command.find(1).deadline == expected.isoformat(timespec="seconds", sep=" ")
+        assert self.command.find(1).deadline == expected
 
     def test_cannot_edit_task_id_to_an_existing_id(self, setup):
         """Тест для проверки невозможности изменить ID задачи на существующий ID"""
