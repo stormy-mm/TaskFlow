@@ -1,5 +1,5 @@
 [project]
-name = "my_app"
+name = "task_flow"
 version = "0.1.0"
 
 [tool.setuptools]
