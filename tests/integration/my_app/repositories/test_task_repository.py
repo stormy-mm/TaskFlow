@@ -10,7 +10,7 @@ from my_app.command_factories.command_factory import TaskFactory, RunCommandFact
 from my_app.core.clock import FakeClock
 from my_app.core.task_manager import Task
 from my_app.core.task_types import TimedBehavior
-from my_app.repositories.task_repository import JsonTaskRepository
+from my_app.repositories.task_repository import SqliteTaskRepository
 
 
 class TestTimeTaskFromRepository:
@@ -24,7 +24,7 @@ class TestTimeTaskFromRepository:
             1, "test", "test", "12 1 2025",
             date=self.clock.now, get_now=get_now,
         )
-        self.repo = JsonTaskRepository(tmp_path / "data.json")
+        self.repo = SqliteTaskRepository(tmp_path / "test.db")
         self.command = RunCommandFactory(self.task, self.repo, get_now=get_now)
         self.command.add()
         self.edit = EditTaskFactory(self.task, self.repo)
@@ -52,46 +52,46 @@ class TestJsonTaskRepository:
     @fixture
     def setup(self, tmp_path):
         """Автоматически вызывается перед каждым тестом"""
-        self.json_path = tmp_path / "data.json"
-        self.repo = JsonTaskRepository(self.json_path)
+        self.db_path = tmp_path / "test.db"
+        self.db = SqliteTaskRepository(self.db_path)
         self.task = TaskFactory.create_task(1, "Test id", "Test description", "20 3 2026")
-        RunCommandFactory(self.task, self.repo).add()
+        RunCommandFactory(self.task, self.db).add()
 
     def test_save_and_load_tasks(self, setup):
-        """Добавленные задачи сохраняются в JSON и восстанавливаются при новой инициализации."""
-        assert self.json_path.exists()
+        """Добавленные задачи сохраняются в sqlite и восстанавливаются при новой инициализации."""
+        assert self.db_path.exists()
 
-        loaded = self.repo.get_by_id(1)
+        loaded = self.db.get_by_id(1)
         assert loaded.title == "Test id"
         assert loaded.description == "Test description"
         assert isinstance(loaded.behaviour, TimedBehavior)
 
     def test_clear_persists_empty_list(self, setup):
         """После clear() файл содержит пустой список."""
-        RunCommandFactory(self.task, self.repo).clear()
-        assert self.repo._tasks == {}
+        RunCommandFactory(self.task, self.db).clear()
+        assert not self.db.get_list()
 
     def test_not_find_task_delete(self, setup):
         """Тест для проверки исключения при отсутствии задачи при удалении"""
-        cmd = RunCommandFactory(self.task, self.repo)
+        cmd = RunCommandFactory(self.task, self.db)
         cmd.clear()
         with raises(e.TaskNotFind):
             cmd.delete()
 
     def test_task_not_exists(self, setup):
         """Тест для проверки исключения при отсутствии задачи"""
-        RunCommandFactory(self.task, self.repo).clear()
+        RunCommandFactory(self.task, self.db).clear()
         with raises(e.TaskNotFind):
-            self.repo.get_by_id(1)
+            self.db.get_by_id(1)
 
     def test_tash_have_id_after_add_task(self, setup):
         """Тест для проверки наличия задачи по id после добавления задачи"""
-        assert isinstance(self.repo.get_by_id(1), Task)
+        assert isinstance(self.db.get_by_id(1), Task)
 
     def test_can_no_input_description(self, setup):
         """Тест для проверки возможности не вводить описание задачи"""
         task = TaskFactory.create_task(2, "Test", None, "20 3 2026 12")
-        command = RunCommandFactory(task, self.repo)
+        command = RunCommandFactory(task, self.db)
         command.add()
         assert command.find(2).description is None
 
@@ -107,30 +107,30 @@ class TestJsonTaskRepository:
         if isinstance(data, (list, tuple, dict)):
             data = json.dumps(data)
 
-        self.json_path.write_text(data, encoding="utf-8")
+        self.db_path.write_text(data, encoding="utf-8")
 
-        repo = JsonTaskRepository(self.json_path)
+        repo = SqliteTaskRepository(self.db_path)
         repo._load()
 
         assert repo.tasks == {}
 
     def test_load_task_from_dict_raises(self, monkeypatch, setup):
         """Тест на загрузку задачи из словаря с ошибками"""
-        self.json_path.write_text(json.dumps([{"id_task": 1}]), encoding="utf-8")
+        self.db_path.write_text(json.dumps([{"id_task": 1}]), encoding="utf-8")
 
         def fake_from_dict(_):
             raise ValueError("boom")
 
         monkeypatch.setattr(Task, "from_dict", fake_from_dict)
 
-        repo = JsonTaskRepository(self.json_path)
+        repo = SqliteTaskRepository(self.db_path)
         repo._load()
 
         assert repo.tasks == {}
 
     def test_load_success(self, monkeypatch, setup):
         """Тест на успешный загрузки"""
-        self.json_path.write_text(json.dumps([{"id_task": 1}]), encoding="utf-8")
+        self.db_path.write_text(json.dumps([{"id_task": 1}]), encoding="utf-8")
 
         class FakeTask:
             def __init__(self, id_task):
@@ -141,7 +141,7 @@ class TestJsonTaskRepository:
 
         monkeypatch.setattr(Task, "from_dict", fake_from_dict)
 
-        repo = JsonTaskRepository(self.json_path)
+        repo = SqliteTaskRepository(self.db_path)
         repo._load()
 
         assert 1 in repo.tasks
@@ -153,7 +153,7 @@ class TestStatusTaskFromRepository:
     @fixture
     def setup(self, tmp_path):
         """Автоматически вызывается перед каждым тестом"""
-        self.repo = JsonTaskRepository(tmp_path / "data.json")
+        self.repo = SqliteTaskRepository(tmp_path / "data.json")
         self.task = TaskFactory.create_task(1, "Test id", "Test description", "1 1 3000")
         self.command = RunCommandFactory(self.task, self.repo)
         self.command.add()
@@ -200,13 +200,13 @@ class TestStatusTaskFromRepository:
 
     def test_dict_command_list(self, setup):
         """Тест для проверки получения словаря после команды 'LIST'"""
-        assert isinstance(OtherCommandsFactory(self.repo).list(), dict)
+        assert isinstance(OtherCommandsFactory(self.repo).get_list(), dict)
 
     def test_len_dict(self, setup):
         """Тест для проверки длины словаря"""
         RunCommandFactory(TaskFactory.create_task(2, "Test", "Test", ""), self.repo).add()
         RunCommandFactory(TaskFactory.create_task(3, "Test", "Test", ""), self.repo).add()
-        assert len(OtherCommandsFactory(self.repo).list()) == 3 # две тут и одна в фикстуре
+        assert len(OtherCommandsFactory(self.repo).get_list()) == 3 # две тут и одна в фикстуре
 
     def test_cannot_add_task_id_to_an_existing_id(self, setup):
         """Тест для проверки невозможности добавления задачи с существующим id"""

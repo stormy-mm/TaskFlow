@@ -5,7 +5,7 @@ from pytest import fixture, raises
 
 from my_app.command_factories.command_factory import TaskFactory, RunCommandFactory, EditTaskFactory
 from my_app.core.clock import FakeClock
-from my_app.repositories.task_repository import JsonTaskRepository
+from my_app.repositories.task_repository import SqliteTaskRepository
 from my_app.common import exceptions as e
 
 
@@ -15,11 +15,11 @@ class TestEditInfoTask:
     @fixture
     def setup(self, tmp_path):
         """Автоматически вызывается перед каждым тестом"""
-        self.repo = JsonTaskRepository(tmp_path / "tasks.json")
+        self.db = SqliteTaskRepository(tmp_path / "test.db")
         self.task = TaskFactory.create_task(1, "Test id", "", "12 3 2026 12")
-        self.command = RunCommandFactory(self.task, self.repo)
+        self.command = RunCommandFactory(self.task, self.db)
         self.command.add()
-        self.edit = EditTaskFactory(self.task, self.repo)
+        self.edit = EditTaskFactory(self.task, self.db)
 
     def test_can_edit_id_task(self, setup):
         """Тест для проверки редактирования id задачи"""
@@ -45,10 +45,10 @@ class TestEditInfoTask:
     def test_cannot_edit_task_id_to_an_existing_id(self, setup):
         """Тест для проверки невозможности изменить ID задачи на существующий ID"""
         task = TaskFactory.create_task(2, "Test", "", "")
-        RunCommandFactory(task, self.repo).add()
+        RunCommandFactory(task, self.db).add()
 
         with raises(e.UnavailableID):
-            EditTaskFactory(task, self.repo).edit_id(2)
+            EditTaskFactory(task, self.db).edit_id(2)
 
     def test_cannot_done_after_deadline(self, setup):
         """
@@ -61,10 +61,10 @@ class TestEditInfoTask:
             2, "Test", "", "12 3 2026 12",
             date=clock.now, get_now=get_now,
         )
-        command = RunCommandFactory(task, self.repo, get_now=get_now)
+        command = RunCommandFactory(task, self.db, get_now=get_now)
         command.add()
         command.start()
-        EditTaskFactory(task, self.repo).edit_deadline("15 1 2026")
+        EditTaskFactory(task, self.db).edit_deadline("15 1 2026")
         clock.advance(timedelta(days=3))
 
         with raises(e.DeadlineHasExpired):
