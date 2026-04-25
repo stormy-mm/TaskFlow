@@ -1,16 +1,16 @@
 from datetime import datetime
 
-from typing import Optional
+from typing import Optional, Any
 
-from my_app.command_factories.command_factory import (
+from ..repositories.task_repository import SqliteTaskRepository
+from ..command_factories.command_factory import (
     default_get_now,
     TaskFactory,
     RunCommandFactory,
     EditTaskFactory,
     OtherCommandsFactory
 )
-from my_app.core.task_manager import Task
-from my_app.repositories.task_repository import JsonTaskRepository
+from ..core.task_manager import Task
 
 
 class TaskApplication:
@@ -19,7 +19,7 @@ class TaskApplication:
     CLI импортирует только этот класс и передаёт ему репозиторий и (опционально) источник времени.
     """
 
-    def __init__(self, repository: JsonTaskRepository):
+    def __init__(self, repository: SqliteTaskRepository):
         self.repo = repository
         self.get_now_datetime = default_get_now
 
@@ -55,9 +55,9 @@ class TaskApplication:
         task = self.repo.get_by_id(task_id)
         RunCommandFactory(task, self.repo, self.get_now_datetime).cancel()
 
-    def list_tasks(self) -> dict:
+    def list_tasks(self) -> list[Any]:
         """Вернуть все задачи (id -> Task)."""
-        return OtherCommandsFactory(self.repo).list()
+        return OtherCommandsFactory(self.repo).get_list()
 
     def clear(self) -> None:
         """Очистить список задач."""

@@ -1,6 +1,8 @@
-from my_app.application.task_application import TaskApplication
-from my_app.common import exceptions as e
-from my_app.cli.input_output import InputOutput
+import sqlite3
+
+from ..application.task_application import TaskApplication
+from ..common import exceptions as e
+from ..cli.input_output import InputOutput
 
 
 class OperationResult:
@@ -50,8 +52,8 @@ class DomainCLI:
                     tasks = self.app.list_tasks()
                     if not tasks:
                         return OperationResult(False, "Список задач пуст")
-                    for task in tasks.values():
-                        io.run_show(*task.__dict__.values())
+                    for task in tasks:
+                        io.run_show(*task)
                     return OperationResult(True, "")
                 case "add":
                     self.app.add(*io.run_add())
@@ -84,7 +86,7 @@ class DomainCLI:
             return OperationResult(False, "Задача не найдена")
         except e.IncorrectInput:
             return OperationResult(False, "Некорректный ввод")
-        except e.UnavailableID:
+        except sqlite3.IntegrityError:
             return OperationResult(False, "ID уже используется")
         except e.TaskAlreadyExists:
             return OperationResult(False, "Задача уже существует")

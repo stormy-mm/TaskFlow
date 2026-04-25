@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from my_app.common import exceptions as e
-from my_app.common.messages import Status as St
+from ..common import exceptions as e
+from ..common.messages import Status as St
 
 
 class ICheck:

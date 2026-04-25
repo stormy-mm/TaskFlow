@@ -1,11 +1,11 @@
-from my_app.repositories.task_repository import JsonTaskRepository
-from my_app.application.task_application import TaskApplication
-from my_app.cli.input_handlers import Handler
+from .repositories.task_repository import SqliteTaskRepository
+from .application.task_application import TaskApplication
+from .cli.input_handlers import Handler
 
 
 def main():
     """Главная функция: репозиторий и приложение создаются здесь, передаются в Handler."""
-    repo = JsonTaskRepository("src/my_app/tasks.json") # инициализация json репозитория
+    repo = SqliteTaskRepository(r'C:\PetProjects\TaskFlow\tasks.db') # инициализация json репозитория
     app = TaskApplication(repo) # инициализация приложения
     handler = Handler(app) # инициализация обработчика
 

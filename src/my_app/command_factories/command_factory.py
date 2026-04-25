@@ -1,14 +1,14 @@
 from my_app.common import exceptions as e
 
 from datetime import datetime
-from typing import Callable, Optional
+from typing import Callable, Optional, Any
 
-from my_app.command_factories.validators import CheckOverdueStatus
-from my_app.cli.date_parser import ParsingDate
-from my_app.core.task_manager import Task, TaskCommand, TaskEdit
-from my_app.repositories.task_repository import JsonTaskRepository
-from my_app.core.clock import Clock
-from my_app.core.task_types import SimpleBehavior, TaskBehaviour, TimedBehavior
+from ..repositories.task_repository import SqliteTaskRepository
+from ..command_factories.validators import CheckOverdueStatus
+from ..cli.date_parser import ParsingDate
+from ..core.task_manager import Task, TaskCommand, TaskEdit
+from ..core.clock import Clock
+from ..core.task_types import SimpleBehavior, TaskBehaviour, TimedBehavior
 
 
 def default_get_now() -> datetime:
@@ -48,8 +48,6 @@ class TaskFactory:
             behaviour=behaviour,
             status=status,
             deadline=parsed_deadline,
-            date=now,
-            up_date=now,
         )
 
 
@@ -58,7 +56,7 @@ class RunCommandFactory:
     def __init__(
             self,
             task: Task,
-            memory: JsonTaskRepository,
+            memory: SqliteTaskRepository,
             get_now: Optional[Callable[[], datetime]] = None,
     ):
         """Инициализация фабрики"""
@@ -101,7 +99,7 @@ class RunCommandFactory:
 
 class EditTaskFactory:
     """Фабрика для редактирования задачи"""
-    def __init__(self, task: Task, memory: JsonTaskRepository) -> None:
+    def __init__(self, task: Task, memory: SqliteTaskRepository) -> None:
         """Инициализация фабрики"""
         self.memory = memory
         self.task = task
@@ -143,10 +141,10 @@ class EditTaskFactory:
 class OtherCommandsFactory:
     """Фабрика других команд"""
 
-    def __init__(self, memory: JsonTaskRepository):
+    def __init__(self, memory: SqliteTaskRepository):
         """Инициализация памяти"""
         self.memory = memory
 
-    def list(self):
+    def get_list(self) -> list[Any]:
         """Фабричный метод для представления структуры данных"""
-        return self.memory.view_dict()
+        return self.memory.get_list()

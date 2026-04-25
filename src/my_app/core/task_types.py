@@ -3,9 +3,9 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Callable, Optional
 
-from my_app.common import exceptions as e
-from my_app.command_factories.validators import CheckChangeStatusTask as CheckStatus
-from my_app.core.clock import Clock
+from ..common import exceptions as e
+from ..command_factories.validators import CheckChangeStatusTask as CheckStatus
+from ..core.clock import Clock
 
 
 class TaskBehaviour(ABC):
