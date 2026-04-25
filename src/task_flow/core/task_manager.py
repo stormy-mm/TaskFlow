@@ -25,7 +25,7 @@ class Task:
         self.id_task = id_task
         self.title = title
         self.description = description
-        self.behaviour = SimpleBehavior()
+        self.behaviour = behaviour
         self.status = status
         self.deadline = deadline
         self.created_at = created_at

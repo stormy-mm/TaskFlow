@@ -2,8 +2,8 @@ import sqlite3
 from typing import Any
 
 from ..core.task_types import SimpleBehavior
-from ..common import exceptions as e
 from ..core.task_manager import Task
+from ..common import exceptions as e
 
 from pathlib import Path
 
@@ -14,7 +14,7 @@ class SqliteTaskRepository:
     def __init__(self, db_path: str | Path):
         self.conn = sqlite3.connect(db_path)
 
-        # ! ПРИМЕНЯТЬ ТОЛЬКО В ТОМ СЛУЧАЕ, ЕСЛИ НУЖНО ПЕРЕСОЗДАТЬ ТАБЛИЦУ
+        # ! ПРИМЕНЯТЬ ТОЛЬКО В ТОМ СЛУЧАЕ, ЕСЛИ НУЖНО ПЕРЕСОЗДАТЬ ТАБЛИЦУ ИЛИ ПРИ ТЕСТАХ
         self._create_table()
 
     def _create_table(self) -> None:
@@ -98,5 +98,6 @@ class SqliteTaskRepository:
 
     def delete(self, task_id: int) -> None:
         """Удаляет строку в БД по ID"""
-        with self.conn:
-            self.conn.execute("DELETE FROM tasks WHERE id = ?", (task_id, ))
+        if self.get_by_id(task_id):
+            with self.conn:
+                self.conn.execute("DELETE FROM tasks WHERE id = ?", (task_id, ))

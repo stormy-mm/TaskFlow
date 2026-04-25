@@ -2,7 +2,7 @@ from datetime import datetime
 
 from typing import Optional, Any
 
-from ..repositories.task_repository import SqliteTaskRepository
+from ..repositories.task_sql import SqliteTaskRepository
 from ..command_factories.command_factory import (
     default_get_now,
     TaskFactory,
@@ -20,7 +20,7 @@ class TaskApplication:
     """
 
     def __init__(self, repository: SqliteTaskRepository):
-        self.repo = repository
+        self.db = repository
         self.get_now_datetime = default_get_now
 
     def add(
@@ -38,60 +38,60 @@ class TaskApplication:
             deadline,
             get_now=self.get_now_datetime,
         )
-        RunCommandFactory(task, self.repo, self.get_now_datetime).add()
+        RunCommandFactory(task, self.db, self.get_now_datetime).add()
 
     def start(self, task_id: int) -> None:
         """Перевести задачу в статус IN_PROGRESS."""
-        task = self.repo.get_by_id(task_id)
-        RunCommandFactory(task, self.repo, self.get_now_datetime).start()
+        task = self.db.get_by_id(task_id)
+        RunCommandFactory(task, self.db, self.get_now_datetime).start()
 
     def complete(self, task_id: int) -> None:
         """Перевести задачу в статус DONE."""
-        task = self.repo.get_by_id(task_id)
-        RunCommandFactory(task, self.repo, self.get_now_datetime).complete()
+        task = self.db.get_by_id(task_id)
+        RunCommandFactory(task, self.db, self.get_now_datetime).complete()
 
     def cancel(self, task_id: int) -> None:
         """Перевести задачу в статус CANCELLED."""
-        task = self.repo.get_by_id(task_id)
-        RunCommandFactory(task, self.repo, self.get_now_datetime).cancel()
+        task = self.db.get_by_id(task_id)
+        RunCommandFactory(task, self.db, self.get_now_datetime).cancel()
 
     def list_tasks(self) -> list[Any]:
         """Вернуть все задачи (id -> Task)."""
-        return OtherCommandsFactory(self.repo).get_list()
+        return OtherCommandsFactory(self.db).get_list()
 
     def clear(self) -> None:
         """Очистить список задач."""
-        self.repo.clear()
+        self.db.clear()
 
     def delete(self, task_id: int) -> None:
         """Удалить задачу по id."""
-        self.repo.delete(task_id)
+        self.db.delete(task_id)
 
     def show(self, task_id: int) -> Task:
         """Вернуть задачу по id."""
-        return self.repo.get_by_id(task_id)
+        return self.db.get_by_id(task_id)
 
     def edit_id(self, task_id: int, new_id: int) -> None:
         """Изменить id задачи."""
-        task = self.repo.get_by_id(task_id)
-        EditTaskFactory(task, self.repo).edit_id(new_id)
+        task = self.db.get_by_id(task_id)
+        EditTaskFactory(task, self.db).edit_id(new_id)
 
     def edit_title(self, task_id: int, new_title: str) -> None:
         """Изменить заголовок задачи."""
-        task = self.repo.get_by_id(task_id)
-        EditTaskFactory(task, self.repo).edit_title(new_title)
+        task = self.db.get_by_id(task_id)
+        EditTaskFactory(task, self.db).edit_title(new_title)
 
     def edit_description(self, task_id: int, description: str) -> None:
         """Изменить описание задачи."""
-        task = self.repo.get_by_id(task_id)
-        EditTaskFactory(task, self.repo).edit_description(description)
+        task = self.db.get_by_id(task_id)
+        EditTaskFactory(task, self.db).edit_description(description)
 
     def edit_deadline(self, task_id: int, deadline: str) -> None:
         """Изменить дедлайн задачи."""
-        task = self.repo.get_by_id(task_id)
-        EditTaskFactory(task, self.repo).edit_deadline(deadline)
+        task = self.db.get_by_id(task_id)
+        EditTaskFactory(task, self.db).edit_deadline(deadline)
 
     def edit_update_at(self, task_id: int, date: datetime) -> None:
         """Изменить дату обновления задачи."""
-        task = self.repo.get_by_id(task_id)
-        EditTaskFactory(task, self.repo).edit_updated_at(date)
+        task = self.db.get_by_id(task_id)
+        EditTaskFactory(task, self.db).edit_updated_at(date)

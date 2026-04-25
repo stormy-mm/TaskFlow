@@ -3,9 +3,9 @@
 Импортирует только фасад TaskApplication и DomainCLI — вся бизнес-логика в ядре.
 """
 
-from my_app.application.task_application import TaskApplication
-from my_app.cli.cli_adapter import DomainCLI
-from my_app.common.messages import Messages as Ms, COMMANDS
+from ..application.task_application import TaskApplication
+from ..cli.cli_adapter import DomainCLI
+from ..common.messages import Messages as Ms, COMMANDS
 
 
 class Handler:

@@ -1,9 +1,9 @@
-from my_app.common import exceptions as e
+from task_flow.common import exceptions as e
 
 from datetime import datetime
 from typing import Callable, Optional, Any
 
-from ..repositories.task_repository import SqliteTaskRepository
+from ..repositories.task_sql import SqliteTaskRepository
 from ..command_factories.validators import CheckOverdueStatus
 from ..cli.date_parser import ParsingDate
 from ..core.task_manager import Task, TaskCommand, TaskEdit
