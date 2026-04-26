@@ -27,7 +27,7 @@ class InputOutput:
         print(f"Статус: {status}")
         print(f"Дата создания: {created_at}")
         print(f"Дата обновления: {updated_at}")
-        print(f"Дедлайн: {deadline if deadline else ""}")
+        print(f"Дедлайн: {deadline if deadline else ''}")
 
     @staticmethod
     def run_edit() -> tuple:
